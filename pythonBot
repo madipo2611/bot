@@ -1,0 +1,109 @@
+import telebot
+
+# Создаем экземпляр бота
+bot = telebot.TeleBot('токен')
+
+class Question:
+    def __init__(self, question, answers, correct_answer):
+        self.question = question
+        self.answers = answers
+        self.correct_answer = correct_answer
+
+# Создаем список вопросов и ответов
+
+questions = [
+    Question('Минимальная единица количества информации', ['число', 'бит', 'байт', 'цифра'], 'бит'),
+    Question('К устройствам ввода относятся все, КРОМЕ', ['цифровая фотокамера', 'принтер', 'графический планшет', 'сканер'], 'принтер'),
+    Question('К устройствам управления НЕ относится', ['джойстик', 'принтер', 'трекбол', 'мышь'], 'принтер'),
+    Question('Средство объединения цифровой и текстовой информации ЭВМ со звуковыми и видеосигналами, называется', ['электронная таблица', 'графический редактор', 'мультимедиа', 'система управления БД'], 'мультимедиа'),
+    Question('Устройство, содержащее в своей структуре все основные технические компоненты ПК, называется', ['системный блок', 'монитор', 'мышь', 'клавиатура'], 'системный блок'),
+    Question('Микропроцессор предназначен для', ['подключения различных устройств к ПК', 'управления и контроля периферийных устройств ПК', 'управления работой ПК и выполнения операций над данными', 'хранения информации, непосредственно участвующей в работе программы'], 'управления работой ПК и выполнения операций над данными'),
+    Question('К основным блокам ПК относятся все, КРОМЕ', ['системный блок', 'монитор', 'мышь', 'клавиатура'], 'мышь'),
+    Question('Просмотреть весь документ, не вмещающийся в рабочем поле окна программы, позволяет', ['строка состояния', 'полоса прокрутки', 'строка меню', 'строка заголовка'], 'полоса прокрутки'),
+    Question('Для подтверждения ввода данных или информации и принудительного перемещения курсора в начало следующей строки служит клавиша', ['Enter', 'Tab', 'Esc', 'Caps lock'], 'Enter'),
+    Question('Монитор – это', ['электронное устройство для визуального представления информации', 'устройство, содержащее в своей структуре все основные технические компоненты ПК', 'устройство для ввода информации в ПК и управления его работой'], 'электронное устройство для визуального представления информации'),
+]
+
+
+
+correct_answers = 0
+
+question_index = 0
+
+answered_questions = set()
+
+
+
+@bot.message_handler(content_types=['text'])
+
+def handle_message(message):
+
+  global correct_answers, question_index, answered_questions
+
+
+
+  if message.text.strip().lower() == '/start':
+    bot.send_message(message.chat.id, f"Приступим к тестированию по информатике. Всего 10 вопросов, для ответа на вопрос укажи цифру варианта ответа.")
+    question_index = 0
+
+    correct_answers = 0
+
+    answered_questions = set()
+
+    send_question(message, question_index)
+
+  else:
+
+    try:
+
+      user_answer_index = int(message.text.strip()) - 1
+
+      if int(message.text) < 1 or int(message.text) > len(questions[question_index].answers):
+        raise ValueError
+
+      if question_index not in answered_questions:
+
+        if questions[question_index].correct_answer == questions[question_index].answers[user_answer_index]:
+
+          correct_answers += 1
+
+        answered_questions.add(question_index)
+
+
+
+      if question_index < len(questions) - 1:
+
+        question_index += 1
+
+        send_question(message, question_index)
+
+      else:
+
+        percentage = correct_answers / len(questions) * 100
+
+        bot.send_message(message.chat.id, f"Вы ответили правильно на {percentage:.2f}% вопросов.")
+        bot.send_message(message.chat.id, "Чтобы начать новый тест, нажмите /start ")
+        if message.text.strip().lower() != '/start':
+            return
+        else:
+            question_index = 0  # Сброс индекса вопроса для новой сессии
+
+
+    except ValueError:
+
+      bot.send_message(message.chat.id, f"Введите цифру от 1 до {len(questions[question_index].answers)}.")
+
+
+def send_question(message, question_index):
+
+  question = questions[question_index]
+
+  text = f"{question_index + 1}. {question.question}"
+  for i, answer in enumerate(question.answers):
+      text += f"\n{i + 1}) {answer}"
+
+  bot.send_message(message.chat.id, text)
+
+
+
+bot.polling()
